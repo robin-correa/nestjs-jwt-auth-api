@@ -1,4 +1,5 @@
 import { IsString, IsEmail, IsNotEmpty } from 'class-validator';
+import { PasswordMatch } from './password-match.decorator';
 
 export class CreateUserDto {
   @IsNotEmpty()
@@ -12,6 +13,11 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   password: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @PasswordMatch('password', { message: 'Passwords must match' })
+  password_confirm: string;
 
   @IsNotEmpty()
   status: number;
