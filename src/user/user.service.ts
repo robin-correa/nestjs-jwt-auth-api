@@ -1,0 +1,75 @@
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from './entities/user.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { GetUserDto } from './dto/get-user.dto';
+import * as bcrypt from 'bcrypt';
+
+@Injectable()
+export class UserService {
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
+
+  async create(createUserDto: CreateUserDto): Promise<GetUserDto> {
+    const clearPassword = createUserDto.password;
+    createUserDto.password = await this.hashPassword(clearPassword);
+    const user = await this.userRepository.save(createUserDto);
+    return new GetUserDto(user);
+  }
+
+  async findAll(): Promise<GetUserDto[]> {
+    const users = await this.userRepository.find();
+    return users.map((user) => new GetUserDto(user));
+  }
+
+  async findOne(id: number): Promise<GetUserDto | undefined> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new HttpException('Record not found', HttpStatus.NOT_FOUND);
+    }
+
+    return new GetUserDto(user);
+  }
+
+  async update(
+    id: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<GetUserDto | undefined> {
+    const user = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new HttpException('Record not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (updateUserDto.password && updateUserDto.password_confirm) {
+      const clearPassword = updateUserDto.password;
+      updateUserDto.password = await this.hashPassword(clearPassword);
+      delete updateUserDto.password_confirm;
+    }
+
+    await this.userRepository.update(id, updateUserDto);
+    return new GetUserDto(user);
+  }
+
+  async remove(id: number) {
+    const user = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new HttpException('Record not found', HttpStatus.NOT_FOUND);
+    }
+
+    this.userRepository.delete(user.id);
+  }
+
+  private async hashPassword(password: string) {
+    const saltOrRounds = 10;
+    return await bcrypt.hash(password, saltOrRounds);
+  }
+}
