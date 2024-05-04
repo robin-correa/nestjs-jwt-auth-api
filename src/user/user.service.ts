@@ -15,6 +15,14 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<GetUserDto> {
+    const existingUserByEmail = await this.userRepository.findOne({
+      where: { email: createUserDto.email },
+    });
+
+    if (existingUserByEmail) {
+      throw new HttpException('Email already exists', HttpStatus.BAD_REQUEST);
+    }
+
     const clearPassword = createUserDto.password;
     createUserDto.password = await this.hashPassword(clearPassword);
     const user = await this.userRepository.save(createUserDto);
@@ -46,6 +54,14 @@ export class UserService {
 
     if (!user) {
       throw new HttpException('Record not found', HttpStatus.NOT_FOUND);
+    }
+
+    const existingUserByEmail = await this.userRepository.findOne({
+      where: { email: updateUserDto.email },
+    });
+
+    if (existingUserByEmail && existingUserByEmail.id != user.id) {
+      throw new HttpException('Email is in used', HttpStatus.BAD_REQUEST);
     }
 
     if (updateUserDto.password && updateUserDto.password_confirm) {
