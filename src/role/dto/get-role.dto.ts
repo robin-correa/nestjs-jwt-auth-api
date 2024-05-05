@@ -1,5 +1,6 @@
 import { Permission } from 'src/entities/permission.entity';
 import { Role } from '../entities/role.entity';
+import { User } from 'src/user/entities/user.entity';
 
 export class GetRoleDto {
   id: number;
@@ -7,6 +8,7 @@ export class GetRoleDto {
   created_at: Date;
   updated_at: Date;
   permissions: Permission[];
+  users: User[];
 
   constructor(role: Role) {
     this.id = role.id;

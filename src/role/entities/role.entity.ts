@@ -1,4 +1,5 @@
 import { Permission } from 'src/entities/permission.entity';
+import { User } from 'src/user/entities/user.entity';
 import {
   Entity,
   Column,
@@ -13,7 +14,7 @@ export class Role {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ type: 'varchar', unique: true })
   name: string;
 
   @CreateDateColumn({ name: 'created_at' })
@@ -21,6 +22,14 @@ export class Role {
 
   @CreateDateColumn({ name: 'updated_at' })
   updated_at: Date;
+
+  @ManyToMany(() => User, (user) => user.roles)
+  @JoinTable({
+    name: 'user_roles',
+    joinColumn: { name: 'role_id' },
+    inverseJoinColumn: { name: 'user_id' },
+  })
+  users: User[];
 
   @ManyToMany(() => Permission, (permission) => permission.roles, {
     cascade: true,
