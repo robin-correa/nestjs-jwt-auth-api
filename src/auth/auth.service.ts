@@ -42,7 +42,7 @@ export class AuthService {
       token_type: 'Bearer',
       access_token: await this.generateAccessToken(user),
       refresh_token: await this.generateRefreshToken(user),
-      expires_in: parseInt(process.env.JWT_ACCESS_TOKEN_EXPIRY_IN_SECONDS),
+      expires_in: +process.env.JWT_ACCESS_TOKEN_EXPIRY_IN_SECONDS,
     };
 
     return new LoginResponseDto(tokenResponse);
@@ -74,7 +74,7 @@ export class AuthService {
       token_type: 'Bearer',
       access_token: await this.generateAccessToken(user),
       refresh_token: await this.generateRefreshToken(user),
-      expires_in: parseInt(process.env.JWT_ACCESS_TOKEN_EXPIRY_IN_SECONDS),
+      expires_in: +process.env.JWT_ACCESS_TOKEN_EXPIRY_IN_SECONDS,
     };
 
     return new LoginResponseDto(tokenResponse);
