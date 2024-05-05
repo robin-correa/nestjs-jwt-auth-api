@@ -1,4 +1,8 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
@@ -20,7 +24,7 @@ export class UserService {
     });
 
     if (existingUserByEmail) {
-      throw new HttpException('Email already exists', HttpStatus.BAD_REQUEST);
+      throw new BadRequestException('Email already in used');
     }
 
     const clearPassword = createUserDto.password;
@@ -40,7 +44,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new HttpException('Record not found', HttpStatus.NOT_FOUND);
+      throw new NotFoundException();
     }
 
     return new GetUserDto(user);
@@ -53,7 +57,7 @@ export class UserService {
     const user = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
-      throw new HttpException('Record not found', HttpStatus.NOT_FOUND);
+      throw new NotFoundException();
     }
 
     const existingUserByEmail = await this.userRepository.findOne({
@@ -61,7 +65,7 @@ export class UserService {
     });
 
     if (existingUserByEmail && existingUserByEmail.id != user.id) {
-      throw new HttpException('Email is in used', HttpStatus.BAD_REQUEST);
+      throw new BadRequestException('Email already in used');
     }
 
     if (updateUserDto.password && updateUserDto.password_confirm) {
@@ -78,7 +82,7 @@ export class UserService {
     const user = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
-      throw new HttpException('Record not found', HttpStatus.NOT_FOUND);
+      throw new NotFoundException();
     }
 
     this.userRepository.delete(user.id);
