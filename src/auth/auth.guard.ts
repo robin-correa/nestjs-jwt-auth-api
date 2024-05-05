@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -22,7 +23,7 @@ export class AuthGuard implements CanActivate {
       });
 
       if (tokenPayload.token_type !== 'access') {
-        throw new UnauthorizedException();
+        throw new ForbiddenException();
       }
 
       request['user'] = tokenPayload;
