@@ -21,6 +21,7 @@ export class UserService {
   async create(createUserDto: CreateUserDto): Promise<GetUserDto> {
     const existingUserByEmail = await this.userRepository.findOne({
       where: { email: createUserDto.email },
+      relations: ['roles', 'permissions'],
     });
 
     if (existingUserByEmail) {
@@ -34,13 +35,16 @@ export class UserService {
   }
 
   async findAll(): Promise<GetUserDto[]> {
-    const users = await this.userRepository.find();
+    const users = await this.userRepository.find({
+      relations: ['roles', 'permissions'],
+    });
     return users.map((user) => new GetUserDto(user));
   }
 
   async findOne(id: number): Promise<GetUserDto | undefined> {
     const user = await this.userRepository.findOne({
       where: { id },
+      relations: ['roles', 'permissions'],
     });
 
     if (!user) {
@@ -62,6 +66,7 @@ export class UserService {
 
     const existingUserByEmail = await this.userRepository.findOne({
       where: { email: updateUserDto.email },
+      relations: ['roles', 'permissions'],
     });
 
     if (existingUserByEmail && existingUserByEmail.id != user.id) {
@@ -76,6 +81,22 @@ export class UserService {
 
     await this.userRepository.update(id, updateUserDto);
     return new GetUserDto(user);
+  }
+
+  async findUserByEmail(email: string): Promise<User> {
+    const userByEmail = await this.userRepository.findOne({
+      where: { email: email },
+    });
+
+    return userByEmail;
+  }
+
+  async findUserById(id: number): Promise<User> {
+    const userById = await this.userRepository.findOne({
+      where: { id: id },
+    });
+
+    return userById;
   }
 
   async remove(id: number) {
