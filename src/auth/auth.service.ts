@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -13,6 +14,7 @@ import * as uuid from 'uuid';
 import { RefreshTokenRequestDto } from './dto/refresh-token-request.dto';
 import { TokenResponseDto } from './dto/token-response.dto';
 import { UserService } from 'src/user/user.service';
+import { GetUserDto } from 'src/user/dto/get-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -72,6 +74,19 @@ export class AuthService {
     };
 
     return new LoginResponseDto(tokenResponse);
+  }
+
+  async getAuthUserByToken(token: string): Promise<GetUserDto> {
+    const tokenPayload = await this.jwtService.verifyAsync(token, {
+      secret: process.env.JWT_SECRET_KEY,
+    });
+
+    if (tokenPayload.token_type !== 'access') {
+      throw new ForbiddenException();
+    }
+
+    const user = await this.userService.findOne(+tokenPayload.sub);
+    return user;
   }
 
   private async isPasswordCorrect(

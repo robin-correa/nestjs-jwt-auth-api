@@ -36,7 +36,7 @@ export class UserService {
 
   async findAll(): Promise<GetUserDto[]> {
     const users = await this.userRepository.find({
-      relations: ['roles', 'permissions'],
+      relations: ['roles', 'permissions', 'roles.permissions'],
     });
     return users.map((user) => new GetUserDto(user));
   }
@@ -44,7 +44,7 @@ export class UserService {
   async findOne(id: number): Promise<GetUserDto | undefined> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['roles', 'permissions'],
+      relations: ['roles', 'permissions', 'roles.permissions'],
     });
 
     if (!user) {
