@@ -83,6 +83,22 @@ export class UserService {
     return new GetUserDto(user);
   }
 
+  async findUserByEmail(email: string): Promise<User> {
+    const userByEmail = await this.userRepository.findOne({
+      where: { email: email },
+    });
+
+    return userByEmail;
+  }
+
+  async findUserById(id: number): Promise<User> {
+    const userById = await this.userRepository.findOne({
+      where: { id: id },
+    });
+
+    return userById;
+  }
+
   async remove(id: number) {
     const user = await this.userRepository.findOne({ where: { id } });
 

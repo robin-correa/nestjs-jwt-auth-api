@@ -5,28 +5,24 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { User } from 'src/user/entities/user.entity';
-import { Repository } from 'typeorm';
 import { LoginRequestDto } from './dto/login-request.dto';
 import * as bcrypt from 'bcrypt';
-import { InjectRepository } from '@nestjs/typeorm';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { JwtService } from '@nestjs/jwt';
 import * as uuid from 'uuid';
 import { RefreshTokenRequestDto } from './dto/refresh-token-request.dto';
 import { TokenResponseDto } from './dto/token-response.dto';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private readonly authRepository: Repository<User>,
+    private readonly userService: UserService,
     private readonly jwtService: JwtService,
   ) {}
 
   async login(loginRequest: LoginRequestDto): Promise<LoginResponseDto> {
-    const user = await this.authRepository.findOne({
-      where: { email: loginRequest.email },
-    });
+    const user = await this.userService.findUserByEmail(loginRequest.email);
 
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -62,9 +58,7 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const user = await this.authRepository.findOne({
-      where: { id: tokenPayload.sub },
-    });
+    const user = await this.userService.findUserById(tokenPayload.sub);
 
     if (!user) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
