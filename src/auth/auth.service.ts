@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   HttpException,
   HttpStatus,
@@ -49,44 +50,70 @@ export class AuthService {
   async refresh(
     refreshTokenRequest: RefreshTokenRequestDto,
   ): Promise<TokenResponseDto> {
-    const tokenPayload = await this.jwtService.verifyAsync(
-      refreshTokenRequest.refresh_token,
-      {
-        secret: process.env.JWT_SECRET_KEY,
-      },
-    );
+    try {
+      const tokenPayload = await this.jwtService.verifyAsync(
+        refreshTokenRequest.refresh_token,
+        {
+          secret: process.env.JWT_SECRET_KEY,
+        },
+      );
 
-    if (tokenPayload.token_type !== 'refresh') {
-      throw new UnauthorizedException();
+      if (tokenPayload.token_type !== 'refresh') {
+        throw new UnauthorizedException();
+      }
+
+      const user = await this.userService.findUserById(tokenPayload.sub);
+
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      const tokenResponse = {
+        token_type: 'Bearer',
+        access_token: await this.generateAccessToken(user),
+        refresh_token: await this.generateRefreshToken(user),
+        expires_in: +process.env.JWT_ACCESS_TOKEN_EXPIRY_IN_SECONDS,
+      };
+
+      return new LoginResponseDto(tokenResponse);
+    } catch (e) {
+      switch (e.name) {
+        case 'TokenExpiredError':
+          throw new UnauthorizedException('Token expired');
+        case 'JsonWebTokenError':
+          throw new BadRequestException('Token is invalid');
+
+        default:
+          console.error(e);
+          throw e;
+      }
     }
-
-    const user = await this.userService.findUserById(tokenPayload.sub);
-
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
-
-    const tokenResponse = {
-      token_type: 'Bearer',
-      access_token: await this.generateAccessToken(user),
-      refresh_token: await this.generateRefreshToken(user),
-      expires_in: +process.env.JWT_ACCESS_TOKEN_EXPIRY_IN_SECONDS,
-    };
-
-    return new LoginResponseDto(tokenResponse);
   }
 
   async getAuthUserByToken(token: string): Promise<GetUserDto> {
-    const tokenPayload = await this.jwtService.verifyAsync(token, {
-      secret: process.env.JWT_SECRET_KEY,
-    });
+    try {
+      const tokenPayload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET_KEY,
+      });
 
-    if (tokenPayload.token_type !== 'access') {
-      throw new ForbiddenException();
+      if (tokenPayload.token_type !== 'access') {
+        throw new ForbiddenException();
+      }
+
+      const user = await this.userService.findOne(+tokenPayload.sub);
+      return user;
+    } catch (e) {
+      switch (e.name) {
+        case 'TokenExpiredError':
+          throw new UnauthorizedException('Token expired');
+        case 'JsonWebTokenError':
+          throw new BadRequestException('Token is invalid');
+
+        default:
+          console.error(e);
+          throw e;
+      }
     }
-
-    const user = await this.userService.findOne(+tokenPayload.sub);
-    return user;
   }
 
   private async isPasswordCorrect(

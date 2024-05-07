@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   CanActivate,
   ExecutionContext,
   ForbiddenException,
@@ -25,16 +26,15 @@ export class AuthGuard implements CanActivate {
     ]);
 
     if (isPublic) {
-      // 💡 See this condition
       return true;
     }
 
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
-    if (!token) {
-      throw new UnauthorizedException();
-    }
     try {
+      if (!token) {
+        throw new UnauthorizedException();
+      }
       const tokenPayload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET_KEY,
       });
@@ -44,10 +44,19 @@ export class AuthGuard implements CanActivate {
       }
 
       request['user'] = tokenPayload;
+      return true;
     } catch (e) {
-      throw new UnauthorizedException();
+      switch (e.name) {
+        case 'TokenExpiredError':
+          throw new UnauthorizedException('Token expired');
+        case 'JsonWebTokenError':
+          throw new BadRequestException('Token is invalid');
+
+        default:
+          console.error(e);
+          throw e;
+      }
     }
-    return true;
   }
 
   private extractTokenFromHeader(request: Request): string | undefined {
