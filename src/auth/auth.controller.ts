@@ -15,14 +15,26 @@ import { Skipauth } from './skipauth.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Skipauth()
   @Post('login')
+  @Skipauth()
   async login(@Body() loginRequest: LoginRequestDto) {
     return await this.authService.login(loginRequest);
   }
 
   @Post('refresh')
-  async refresh(@Body() refreshTokenRequestDto: RefreshTokenRequestDto) {
+  @Skipauth()
+  async refresh(
+    @Request() request: Request,
+    @Body() refreshTokenRequestDto: RefreshTokenRequestDto,
+  ) {
+    const [type, accessToken] =
+      request.headers['authorization']?.split(' ') ?? [];
+
+    if (!accessToken || type !== 'Bearer') {
+      throw new UnauthorizedException();
+    }
+
+    await this.authService.verifyAccessTokenForRefreshToken(accessToken);
     return await this.authService.refresh(refreshTokenRequestDto);
   }
 

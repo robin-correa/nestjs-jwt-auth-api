@@ -15,7 +15,7 @@ import * as uuid from 'uuid';
 import { RefreshTokenRequestDto } from './dto/refresh-token-request.dto';
 import { TokenResponseDto } from './dto/token-response.dto';
 import { UserService } from 'src/user/user.service';
-import { GetUserDto } from 'src/user/dto/get-user.dto';
+import { GetAuthUserDto } from './dto/get-auth-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -90,7 +90,7 @@ export class AuthService {
     }
   }
 
-  async getAuthUserByToken(token: string): Promise<GetUserDto> {
+  async getAuthUserByToken(token: string): Promise<GetAuthUserDto> {
     try {
       const tokenPayload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET_KEY,
@@ -100,7 +100,7 @@ export class AuthService {
         throw new ForbiddenException();
       }
 
-      const user = await this.userService.findOne(+tokenPayload.sub);
+      const user = await this.userService.findOneForAuthUser(+tokenPayload.sub);
       return user;
     } catch (e) {
       switch (e.name) {
@@ -113,6 +113,26 @@ export class AuthService {
           console.error(e);
           throw e;
       }
+    }
+  }
+
+  async verifyAccessTokenForRefreshToken(token: string): Promise<void> {
+    try {
+      const tokenPayload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET_KEY,
+        ignoreExpiration: true,
+      });
+
+      if (tokenPayload.token_type !== 'access') {
+        throw new ForbiddenException();
+      }
+    } catch (e) {
+      if (e.name == 'JsonWebTokenError') {
+        throw new UnauthorizedException();
+      }
+
+      console.error(e);
+      throw e;
     }
   }
 

@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GetUserDto } from './dto/get-user.dto';
 import * as bcrypt from 'bcrypt';
+import { GetAuthUserDto } from 'src/auth/dto/get-auth-user.dto';
 
 @Injectable()
 export class UserService {
@@ -107,6 +108,37 @@ export class UserService {
     }
 
     this.userRepository.delete(user.id);
+  }
+
+  async findOneForAuthUser(id: number): Promise<GetAuthUserDto | undefined> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['roles', 'permissions', 'roles.permissions'],
+    });
+
+    if (!user) {
+      throw new NotFoundException();
+    }
+
+    const userRoleNames = user.roles.map((role) => role.name);
+
+    const userPermissionNames = user.permissions.map(
+      (permission) => permission.name,
+    );
+    const rolePermissionNames = user.roles.flatMap((role) =>
+      role.permissions.map((permission) => permission.name),
+    );
+
+    // Combine permissions and remove duplicates using a set
+    const allPermissionsSet = new Set([
+      ...userPermissionNames,
+      ...rolePermissionNames,
+    ]);
+
+    // Convert the set back to an array
+    const allPermissions = Array.from(allPermissionsSet);
+
+    return new GetAuthUserDto(user, userRoleNames, allPermissions);
   }
 
   private async hashPassword(password: string) {
