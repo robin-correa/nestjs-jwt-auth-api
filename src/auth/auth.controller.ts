@@ -1,4 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Request,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginRequestDto } from './dto/login-request.dto';
 import { RefreshTokenRequestDto } from './dto/refresh-token-request.dto';
@@ -17,5 +24,16 @@ export class AuthController {
   @Post('refresh')
   async refresh(@Body() refreshTokenRequestDto: RefreshTokenRequestDto) {
     return await this.authService.refresh(refreshTokenRequestDto);
+  }
+
+  @Get('user')
+  async user(@Request() request: Request) {
+    const [type, token] = request.headers['authorization']?.split(' ') ?? [];
+
+    if (!token || type !== 'Bearer') {
+      throw new UnauthorizedException();
+    }
+
+    return await this.authService.getAuthUserByToken(token);
   }
 }
