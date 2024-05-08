@@ -1,5 +1,5 @@
 import { Permission } from 'src/entities/permission.entity';
-import { Role } from 'src/role/entities/role.entity';
+import { User } from 'src/user/entities/user.entity';
 import {
   Entity,
   Column,
@@ -9,22 +9,13 @@ import {
   JoinTable,
 } from 'typeorm';
 
-@Entity({ name: 'users' })
-export class User {
+@Entity({ name: 'roles' })
+export class Role {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  name: string;
-
   @Column({ type: 'varchar', unique: true })
-  email: string;
-
-  @Column({ type: 'text' })
-  password: string;
-
-  @Column({ default: 0 })
-  status: number;
+  name: string;
 
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
@@ -32,24 +23,21 @@ export class User {
   @CreateDateColumn({ name: 'updated_at' })
   updated_at: Date;
 
-  @ManyToMany(() => Role, (role) => role.users, {
-    cascade: true,
-    onDelete: 'CASCADE',
-  })
+  @ManyToMany(() => User, (user) => user.roles)
   @JoinTable({
     name: 'user_roles',
-    joinColumn: { name: 'user_id' },
-    inverseJoinColumn: { name: 'role_id' },
+    joinColumn: { name: 'role_id' },
+    inverseJoinColumn: { name: 'user_id' },
   })
-  roles: Role[];
+  users: User[];
 
   @ManyToMany(() => Permission, (permission) => permission.roles, {
     cascade: true,
     onDelete: 'CASCADE',
   })
   @JoinTable({
-    name: 'user_permissions',
-    joinColumn: { name: 'user_id' },
+    name: 'role_permissions',
+    joinColumn: { name: 'role_id' },
     inverseJoinColumn: { name: 'permission_id' },
   })
   permissions: Permission[];

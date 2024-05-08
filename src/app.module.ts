@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { User } from './user/entities/user.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
+import { RoleModule } from './role/role.module';
 
 @Module({
   imports: [
@@ -13,15 +14,17 @@ import { UserModule } from './user/user.module';
       useFactory: async () => ({
         type: 'mysql',
         host: process.env.MYSQL_HOST,
-        port: parseInt(process.env.MYSQL_PORT),
+        port: +process.env.MYSQL_PORT,
         username: process.env.MYSQL_USERNAME,
         password: process.env.MYSQL_PASSWORD,
         database: process.env.MYSQL_DATABASE,
-        entities: [User],
-        synchronize: true,
+        entities: [__dirname + '/**/*.entity.{ts,js}'],
+        synchronize: process.env.MYSQL_SYNCRONIZE == 'true',
       }),
     }),
     UserModule,
+    AuthModule,
+    RoleModule,
   ],
   controllers: [AppController],
   providers: [AppService],
